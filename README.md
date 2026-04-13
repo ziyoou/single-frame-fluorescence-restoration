@@ -1,2 +1,9 @@
 # single-frame-fluorescence-restoration
-Code for physics-informed end-to-end learning for fluorescence image denoising and background removal
+This repository contains the code for physics-informed end-to-end learning for single-frame fluorescence image denoising and out-of-focus background removal.
+
+## Requirements
+- Python 3.9.13
+- PyTorch 1.9.0
+- NumPy
+- SciPy
+- matplotlib
