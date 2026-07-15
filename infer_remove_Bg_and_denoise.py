@@ -9,7 +9,7 @@ from Utils.sfhformer_haze import sfhformer_haze
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
 # 输入：平场校正后的三维 TIFF stack
-input_stack_path = r".\demo_data\remove_background\raw_noise_stack.tif"
+input_stack_path = r".\demo_data\remove_background\raw_noise_stack.npy"
 
 # 输出：网络推理后的三维 TIFF stack
 out_stack_path = r".\demo_data\remove_background\infer_denoise_stack.tif"
@@ -75,13 +75,12 @@ def load_tiff_stack(path):
 def main():
     print(f"Using device: {device}")
 
-    if not os.path.isfile(input_stack_path):
-        raise FileNotFoundError(f"找不到输入 stack：\n{input_stack_path}")
+    
 
     os.makedirs(os.path.dirname(os.path.abspath(out_stack_path)), exist_ok=True)
 
     # ---------- 读取三维输入 ----------
-    stack = load_tiff_stack(input_stack_path)
+    stack = np.load(input_stack_path)
     print(f"Input stack shape (Z, Y, X): {stack.shape}")
     print(f"Input dtype: {stack.dtype}")
 

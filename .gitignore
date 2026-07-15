@@ -1,15 +1,22 @@
-__pycache__/
-*.pyc
+# Ignore everything by default
+*
 
-dataset/
-path_models/
+# But keep folders visible for matching allowed files
+!*/
 
-*.pth
-*.pt
-*.ckpt
-*.tif
-*.tiff
-*.npy
-*.npz
+# Allow small source/document files
+!*.py
+!*.md
+!*.txt
+!*.json
+!*.yml
+!*.yaml
+!*.toml
+!*.ini
+!*.cfg
 
-za.py
+# Allow Git config/document files
+!.gitignore
+!LICENSE
+!requirements.txt
+!*.gitkeep
