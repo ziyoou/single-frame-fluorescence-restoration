@@ -42,14 +42,17 @@ To train the models from scratch, follow these steps:
 - Change the relative dataset and model-saving paths in the corresponding training scripts.
 - Run the appropriate script:
   - `train_denoise_wide_field.py` for wide-field fluorescence denoising.
-  - `train_denoise_only_noisy_img.py` for training with only noisy experimental images.
+  - Before running `train_denoise_only_noisy_img.py`, run `noise_parameter_estimation.py` to estimate the noise parameters from the noisy images. Then use the estimated parameters to train the model with `train_denoise_only_noisy_img.py`.
   - `train_remove_Bg_and_denoise.py` for joint background removal and denoising.
 
-## Infer
 
-在demo 文件夹里给了一些实力图像，在path_models 提供了一些预先训练的模型，可分别运行Infer_denoise_wide_field.py 查看运行结果。
+## Inference
 
+To test the pretrained models, use the example images in `demo_data/` and the model checkpoints in `path_models/`. After updating the input, model, and output paths, run one of the following scripts:
 
+- `Infer_denoise_wide_field.py`: wide-field fluorescence denoising.
+- `Infer_denoise_only_noisy_img.py`: denoising using a model trained from noisy images.
+- `Infer_remove_Bg_and_denoise.py`: simultaneous out-of-focus background removal and denoising.
 
 
 
