@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+
+dataset/
+path_models/
+
+*.pth
+*.pt
+*.ckpt
+*.tif
+*.tiff
+*.npy
+*.npz
+
+za.py
