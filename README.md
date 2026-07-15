@@ -9,6 +9,10 @@ This repository contains the code for physics-informed end-to-end learning for s
 - matplotlib
 
 
+请按一下步骤
+1. 调用generate_randimage.py，生成用于训练去噪、去背景的随机图像，保存到 dataset 文件下。
+
+
 pip install -r requirements.txt
 python train.py
 python train.py
