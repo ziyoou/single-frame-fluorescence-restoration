@@ -21,3 +21,4 @@
 !requirements.txt
 !*.gitkeep
 !*.png
+!*.pth
