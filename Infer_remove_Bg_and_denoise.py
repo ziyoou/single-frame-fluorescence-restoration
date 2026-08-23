@@ -163,7 +163,7 @@ def main():
                 axs[0].axis("off")
 
                 axs[1].imshow(pred_u16, cmap=cmap_580, vmin=pred_u16.min(), vmax=pred_u16.max())
-                axs[1].set_title("Denoised")
+                axs[1].set_title("Denoised and remove Bg")
                 axs[1].axis("off")
 
                 fig.savefig(
