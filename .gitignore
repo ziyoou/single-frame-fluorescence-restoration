@@ -22,3 +22,5 @@
 !*.gitkeep
 !*.png
 !*.pth
+!*.npy
+!*.tiff
