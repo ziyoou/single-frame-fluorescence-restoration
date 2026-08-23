@@ -91,7 +91,7 @@ axs[2].imshow(sr_image, cmap=cmap_580)
 axs[2].set_title('inference')
 axs[2].axis('off')
 add_psnr_ssim_labels(axs[2], sn2n_psnr_value, sn2n_ssim_value,sn2n_rmse_value)
-fig.savefig(os.path.join(output_folder, f"Result_{name_tag}.tiff"), dpi=300, bbox_inches='tight')
+fig.savefig(os.path.join(output_folder, f"Result_{name_tag}.png"), dpi=300, bbox_inches='tight')
 #plt.show()
 
 

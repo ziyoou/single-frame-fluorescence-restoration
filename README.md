@@ -48,12 +48,17 @@ To train the models from scratch, follow these steps:
 
 ## Inference
 
-To test the pretrained models, use the example images in `demo_data/` and the model checkpoints in `path_models/`. After updating the input, model, and output paths, run one of the following scripts:
+To evaluate the pretrained models, use the example images in `demo_data/` and the model checkpoints in `path_models/`. After specifying the input, model-checkpoint, and output paths, run one of the following scripts:
 
-- `Infer_denoise_wide_field.py`: wide-field fluorescence denoising.
-- `Infer_denoise_only_noisy_img.py`: denoising using a model trained from noisy images.
-- `Infer_remove_Bg_and_denoise.py`: simultaneous out-of-focus background removal and denoising.
+- `Infer_denoise_wide_field.py`: wide-field fluorescence denoising. The inference results are saved in demo_data\denoise\experimental_wide_field_img. Representative restored images are shown below:
+<img src=".\demo_data\denoise\experimental_wide_field_img\Result_microtubule.png" alt="Result_corn_stem" style="zoom:80%;" /> 
 
+<img src=".\demo_data\denoise\experimental_wide_field_img\Result_oleander.png" alt="Result_corn_stem" style="zoom:80%;" />
+
+- `Infer_denoise_only_noisy_img.py`: denoising using a model trained exclusively on noisy images. The inference result is saved in demo_data\denoise\only_noisy_img_Myosin_IIA. A representative restored image is shown below:
+<img src=".\demo_data\denoise\only_noisy_img_Myosin_IIA\Result_Myosin_IIA.png" alt="Result_corn_stem" style="zoom:80%;" />
+- `Infer_remove_Bg_and_denoise.py`: simultaneous out-of-focus background removal and denoising. The inference results are saved in demo_data\remove_background. A representative comparison is shown below:
+<img src=".\demo_data\remove_background\Result_color\Compare_z0000.png" alt="Result_corn_stem" style="zoom:80%;" />
 
 
 If you use this code, please cite our paper:

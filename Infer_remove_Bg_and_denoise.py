@@ -167,7 +167,7 @@ def main():
                 axs[1].axis("off")
 
                 fig.savefig(
-                    os.path.join(compare_folder, f"Compare_z{z:04d}.tiff"),
+                    os.path.join(compare_folder, f"Compare_z{z:04d}.png"),
                     dpi=300,
                     bbox_inches="tight"
                 )

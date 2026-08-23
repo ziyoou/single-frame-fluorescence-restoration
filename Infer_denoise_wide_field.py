@@ -12,7 +12,7 @@ from skimage.metrics import structural_similarity as compare_ssim
 from matplotlib.colors import LinearSegmentedColormap
 
 output_folder = r"./demo_data\denoise\experimental_wide_field_img/"
-name_tag = "corn_stem"  #"microtubule"   #"corn_stem"  #"pituitary"# "oleander"
+name_tag = "oleander"  #"microtubule"   #"corn_stem"  #"pituitary"# "oleander"
 # 读取 NumPy 数据
 MEAN_Img = np.load(
     os.path.join(output_folder, f"MEAN_Img_{name_tag}.npy")
@@ -79,7 +79,7 @@ axs[2].imshow(sr_image, cmap=cmap_580)
 axs[2].set_title('inference')
 axs[2].axis('off')
 add_psnr_ssim_labels(axs[2], sn2n_psnr_value, sn2n_ssim_value,sn2n_rmse_value)
-fig.savefig(os.path.join(output_folder, f"Result_{name_tag}.tiff"), dpi=300, bbox_inches='tight')
+fig.savefig(os.path.join(output_folder, f"Result_{name_tag}.png"), dpi=300, bbox_inches='tight')
 plt.show()
 
 
