@@ -11,8 +11,8 @@ from skimage.metrics import peak_signal_noise_ratio as compare_psnr
 from skimage.metrics import structural_similarity as compare_ssim
 from matplotlib.colors import LinearSegmentedColormap
 
-output_folder = r"./demo_data\denoise\wide_field/"
-name_tag = "microtubule"   #"corn_stem"  #"pituitary"# "oleander"
+output_folder = r"./demo_data\denoise\experimental_wide_field_img/"
+name_tag = "corn_stem"  #"microtubule"   #"corn_stem"  #"pituitary"# "oleander"
 # 读取 NumPy 数据
 MEAN_Img = np.load(
     os.path.join(output_folder, f"MEAN_Img_{name_tag}.npy")
@@ -26,7 +26,7 @@ lr_image = torch.from_numpy(lr_image_np).unsqueeze(0).unsqueeze(0)
 model = SFHformer_m()  # 参数必须与训练时一致
 
 state_dict = torch.load(
-    "path_models\denoise\wide_field\ep_385_state_dict.pth",
+    "path_models\denoise\experimental_wide_field_img\ep_385_state_dict.pth",
     map_location="cpu",
     weights_only=True
 )
@@ -80,6 +80,6 @@ axs[2].set_title('inference')
 axs[2].axis('off')
 add_psnr_ssim_labels(axs[2], sn2n_psnr_value, sn2n_ssim_value,sn2n_rmse_value)
 fig.savefig(os.path.join(output_folder, f"Result_{name_tag}.tiff"), dpi=300, bbox_inches='tight')
-#plt.show()
+plt.show()
 
 
