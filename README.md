@@ -36,7 +36,7 @@ single-frame-fluorescencerestoration/
 ```
 
 ## Train
-在训练之前，需要提前预知一些基本参数，例如数值孔径(NA)、发射波长、像素尺寸、噪声参数、峰值光子数等。To train the models from scratch, follow these steps:
+Before initiating model training, specify the key imaging and noise parameters, including the numerical aperture (NA), emission wavelength, pixel size, noise parameters, and peak photon count. Once these parameters have been determined, follow the steps below to train the models from scratch:
 
 - Run `generate_randimage.py` to generate 10,000 random images (512 × 512 pixels) in each subfolder of `dataset/`. The validation set contains one tenth as many images as the training set.
 - Change the relative dataset and model-saving paths in the corresponding training scripts.
