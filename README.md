@@ -36,13 +36,13 @@ single-frame-fluorescencerestoration/
 ```
 
 ## Train
-To train the models from scratch, follow these steps:
+在训练之前，需要提前预知一些基本参数，例如数值孔径(NA)、发射波长、像素尺寸、噪声参数、峰值光子数等。To train the models from scratch, follow these steps:
 
-- Run `generate_randimage.py` to generate 10,000 random images in each subfolder of `dataset/`. The validation set contains one tenth as many images as the training set.
+- Run `generate_randimage.py` to generate 10,000 random images (512 × 512 pixels) in each subfolder of `dataset/`. The validation set contains one tenth as many images as the training set.
 - Change the relative dataset and model-saving paths in the corresponding training scripts.
 - Run the appropriate script:
   - `train_denoise_wide_field.py` for wide-field fluorescence denoising.
-  - Before running `train_denoise_only_noisy_img.py`, run `noise_parameter_estimation.py` to estimate the noise parameters from the noisy images. Then use the estimated parameters to train the model with `train_denoise_only_noisy_img.py`.
+  - Before running `train_denoise_only_noisy_img.py`, run `noise_parameter_estimation.py` to estimate the noise parameters from the noisy images. In addition, estimate the point-spread function (PSF); here, the PSF is approximated by a Gaussian function, whose width must be determined. Then use the estimated parameters to train the model with `train_denoise_only_noisy_img.py`.
   - `train_remove_Bg_and_denoise.py` for joint background removal and denoising.
 
 
@@ -50,18 +50,20 @@ To train the models from scratch, follow these steps:
 
 To evaluate the pretrained models, use the example images in `demo_data/` and the model checkpoints in `path_models/`. After specifying the input, model-checkpoint, and output paths, run one of the following scripts:
 
-- `Infer_denoise_wide_field.py`: wide-field fluorescence denoising. The inference results are saved in demo_data\denoise\experimental_wide_field_img. Representative restored images are shown below:
+- `Infer_denoise_wide_field.py`: wide-field fluorescence denoising. The inference results are saved in `demo_data\denoise\experimental_wide_field_img`. Representative restored images are shown below:
 
 <img src=".\demo_data\denoise\experimental_wide_field_img\Result_microtubule.png" alt="Result_corn_stem" style="zoom:80%;" /> 
 
 <img src=".\demo_data\denoise\experimental_wide_field_img\Result_oleander.png" alt="Result_corn_stem" style="zoom:80%;" />
 
-- `Infer_denoise_only_noisy_img.py`: denoising using a model trained exclusively on noisy images. The inference result is saved in demo_data\denoise\only_noisy_img_Myosin_IIA. A representative restored image is shown below:
+- `Infer_denoise_only_noisy_img.py`: denoising using a model trained exclusively on noisy images. The inference result is saved in `demo_data\denoise\only_noisy_img_Myosin_IIA`. A representative restored image is shown below:
 
 <img src=".\demo_data\denoise\only_noisy_img_Myosin_IIA\Result_Myosin_IIA.png" alt="Result_corn_stem" style="zoom:80%;" />
-- `Infer_remove_Bg_and_denoise.py`: simultaneous out-of-focus background removal and denoising. The inference results are saved in demo_data\remove_background. A representative comparison is shown below:
+- `Infer_remove_Bg_and_denoise.py`: simultaneous out-of-focus background removal and denoising. The inference results are saved in `demo_data\remove_background`. A representative comparison is shown below:
 
 <img src=".\demo_data\remove_background\Result_color\Compare_z0000.png" alt="Result_corn_stem" style="zoom:30%;" />
 
 If you use this code, please cite our paper:
 [paper information]
+
+

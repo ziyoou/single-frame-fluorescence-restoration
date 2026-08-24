@@ -24,6 +24,8 @@ batch_per_ep = 600
 learning_rate=2e-4
 epochs = 400
 S = 256
+
+### optical parameters
 NA = 0.6
 wavelength = 580e-9
 pixelsize = 6.5/40*1e-6
