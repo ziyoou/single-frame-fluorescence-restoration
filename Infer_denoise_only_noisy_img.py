@@ -1,7 +1,7 @@
 
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('TkAgg')  # 或者 'Qt5Agg'
+matplotlib.use('TkAgg')  # Or 'Qt5Agg'
 import os
 import numpy as np
 import torch
@@ -15,7 +15,7 @@ output_folder = r"./demo_data\denoise\only_noisy_img_Myosin_IIA/"
 name_tag = "Myosin_IIA"   #"corn_stem"  #"pituitary"# "oleander"
 
 
-model = SFHformer_m()  # 参数必须与训练时一致
+model = SFHformer_m()  # Parameters must match those used during training
 
 state_dict = torch.load(
     "path_models\denoise\only_noisy_img_Myosin_IIA\Only_noisy_img_state_dict.pth",
@@ -29,7 +29,7 @@ model.eval()
 
 
 
-# 读取 NumPy 数据
+# Load NumPy data
 MEAN_Img = np.load(
     os.path.join(output_folder, f"MEAN_Img_{name_tag}.npy")
 ).astype(np.float32)
@@ -48,18 +48,18 @@ max_gray = max(float(lr_image_np.max()), 1e-6)
 lr_image_np = lr_image_np/max_gray
 lr_image = torch.from_numpy(lr_image_np).unsqueeze(0).unsqueeze(0)
 with torch.no_grad():
-    sr_tensor = model(lr_image.to("cuda"))  # 超分辨率图像
+    sr_tensor = model(lr_image.to("cuda"))  # Super-resolved image
 
 sr_tensor = sr_tensor[:, 0, :, :].squeeze()
 sr_image = (sr_tensor.cpu())
 sr_image=sr_image.numpy()
-sr_image = (sr_image-np.min(sr_image))/(np.max(sr_image)-np.min(sr_image)+ 1e-12)   #  归一化
+sr_image = (sr_image-np.min(sr_image))/(np.max(sr_image)-np.min(sr_image)+ 1e-12)   #  Normalize
 
 lr_image = lr_image.squeeze()
 lr_image = lr_image.numpy()
-lr_image = (lr_image-np.min(lr_image))/(np.max(lr_image)-np.min(lr_image)+ 1e-12)   #  归一化
+lr_image = (lr_image-np.min(lr_image))/(np.max(lr_image)-np.min(lr_image)+ 1e-12)   #  Normalize
 
-MEAN_Img = (MEAN_Img-np.min(MEAN_Img))/(np.max(MEAN_Img)-np.min(MEAN_Img)+ 1e-12)   #  归一化
+MEAN_Img = (MEAN_Img-np.min(MEAN_Img))/(np.max(MEAN_Img)-np.min(MEAN_Img)+ 1e-12)   #  Normalize
 data_range = 1.0
 raw_psnr_value = compare_psnr(MEAN_Img, lr_image,data_range=data_range)
 raw_ssim_value, _ = compare_ssim(MEAN_Img, lr_image, data_range=data_range,full=True)

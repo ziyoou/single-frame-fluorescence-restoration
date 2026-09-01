@@ -1,6 +1,6 @@
 
 import matplotlib
-matplotlib.use('TkAgg')  # 或者 'Qt5Agg'
+matplotlib.use('TkAgg')  # Or 'Qt5Agg'
 import torch
 import numpy as np
 from Utils.DATAset import *

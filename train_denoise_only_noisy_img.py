@@ -14,13 +14,13 @@ from Utils.DATAset import *
 from Utils.np_transforms import *
 from Utils.SFHformer import SFHformer_m
 
-# ===================== 全局配置 =====================
-# 固定随机种子
+# ===================== Global configuration =====================
+# Fix random seeds
 torch.backends.cudnn.benchmark = True
 torch.manual_seed(0)
 np.random.seed(0)
 
-# 路径配置
+# Path configuration
 CURRENT_DATE = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
 IMAGE_DIR_TRAIN = r"./dataset/denoise/rand_image_512/"
 IMAGE_DIR_EVAL = r"./dataset/denoise/rand_image_512_eval/"
@@ -38,15 +38,15 @@ LEARNING_RATE = 2e-4
 EPOCHS = 200
 S = 256
 
-# 可视化参数
+# Visualization parameters
 VIS_EVERY = 10
 VIS_NUM = 30
 
-# 噪声参数
+# Noise parameters
 #BIAS = 102.0
 #MAX_GRAY = 400.0
 A = 2.241111
-B = -5.234278   #  b的平方
+B = -5.234278   # Square of b
 PHOTON1 = 20
 PHOTON2 = 80
 
@@ -54,7 +54,7 @@ PHOTON2 = 80
 def norm01_tensor(x, eps=1e-9):
     """
     x: [N, C, H, W]
-    对每张图单独归一化到 0-1，用于 TensorBoard 可视化。
+    Normalize each image independently to [0, 1] for TensorBoard visualization.
     """
     x = x[:, 0:1, ...]
     x_min = x.amin(dim=(-2, -1), keepdim=True)
@@ -96,7 +96,7 @@ def build_gaussian_psf_list():
 
 
 def main():
-    # ===================== 日志与设备 =====================
+    # ===================== Logging and device =====================
     path = "Photo1_%sP2_%s_a=%s_b=%s" % (
         str(PHOTON1),
         str(PHOTON2),
@@ -144,7 +144,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # ===================== 数据集与 DataLoader =====================
+    # ===================== Dataset and DataLoader =====================
     train_transforms = np_transforms.Compose([
         np_transforms.RandomCrop(S + 2 * EDGE),
         np_transforms.RandomHorizontalFlip(),
@@ -195,7 +195,7 @@ def main():
         num_workers=0,
     )
 
-    # ===================== 模型与优化器 =====================
+    # ===================== Model and optimizer =====================
     model = SFHformer_m().cuda()
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -214,7 +214,7 @@ def main():
     early_stop_counter = 0
     start_ep = 0
 
-    # ===================== 断点恢复 =====================
+    # ===================== Checkpoint recovery =====================
     checkpoint_path = os.path.join(PATH_MODEL, "ep_60checkpoint.pth")
     if os.path.isfile(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
@@ -238,7 +238,7 @@ def main():
         print(f"Epoch {ep}/{EPOCHS}")
         print(f"Current learning rate: {optimizer.param_groups[0]['lr']}")
 
-        # ===================== 训练 =====================
+        # ===================== Training =====================
         model.train()
         train_l2_step = 0
         loss_all = 0
@@ -274,7 +274,7 @@ def main():
         avg_loss = loss_all / train_l2_step
         loss_history.append(avg_loss)
 
-        # ===================== 验证 =====================
+        # ===================== Validation =====================
         model.eval()
         valid_mse = 0
 
@@ -303,7 +303,7 @@ def main():
 
         avg_valid_mse = valid_mse / len(eval_loader)
 
-        # ===================== TensorBoard 记录 =====================
+        # ===================== TensorBoard logging =====================
         if ep % VIS_EVERY == 0 and vis_count > 0:
             xx = torch.cat(vis_low_list, dim=0)
             yy = torch.cat(vis_high_list, dim=0)
@@ -339,7 +339,7 @@ def main():
         print(f"Validation MSE Loss: {avg_valid_mse:.6f}")
         print(f"Average  Loss: {avg_loss:.6f}")
 
-        # ===================== 保存与早停 =====================
+        # ===================== Saving and early stopping =====================
         if min_valid_mse == float("inf"):
             improve_ratio = float("inf")
         else:

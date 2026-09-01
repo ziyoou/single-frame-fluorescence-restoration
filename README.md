@@ -10,12 +10,12 @@ To install the dependencies, run: pip install -r requirements.txt
 
 ```text
 single-frame-fluorescencerestoration/
-├── dataset/                         # Dataset loading and preprocessing scripts
+├── dataset/                         # Simulated datasets
 ├── demo_data/                       # Example fluorescence images for demonstration
 ├── path_models/                     # Pretrained model checkpoints
 ├── Utils/                           # Utility functions and network-related modules
 │
-├── generate_randimage.py            # Generate simulated training images
+├── generate_randimage.py            # Generate artificial random images
 ├── noise_parameter_estimation.py    # Estimate noise parameters from noisy images
 │
 ├── train_denoise_wide_field.py      # Train the wide-field fluorescence denoising model

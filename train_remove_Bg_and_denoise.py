@@ -1,6 +1,6 @@
 
 import matplotlib
-matplotlib.use('TkAgg')  # 或者 'Qt5Agg'
+matplotlib.use('TkAgg')  # Or 'Qt5Agg'
 import torch
 import numpy as np
 import os
@@ -14,11 +14,11 @@ from Utils.Defocus_PSF import *
 from Utils.sfhformer_haze import sfhformer_haze
 from Utils.microscPSF import *
 import json
-# 获取当前日期
-current_date = datetime.datetime.now().strftime('%Y-%m-%d')  # 格式化为 'YYYY-MM-DD'
+# Get the current date
+current_date = datetime.datetime.now().strftime('%Y-%m-%d')  # Format as 'YYYY-MM-DD'
 
-torch.manual_seed(0)   # 设置随机数生成器的种子，确保神经网络训练过程中
-np.random.seed(0)      #每次运行时的随机性行为是相同的，从而保证结果的可重现性
+torch.manual_seed(0)   # Seed the random number generator so that neural network training
+np.random.seed(0)      # behaves identically across runs and remains reproducible
 
 image_dir_train = [
     r"dataset\\remove_background\rand_image_512\1/",
@@ -46,14 +46,14 @@ image_dir_eval = [
 ]
 
 batch_size = 2
-batch_per_ep = 500  #每个 epoch 中进行的批量训练次数
+batch_per_ep = 500  # Number of training batches per epoch
 learning_rate=2e-4
 epochs = 200
 S = 256
 Scale = 1
 NA = 0.7
-n = 1  # 物镜的环境折射率
-ns = 1  # 样品所处介质的折射率
+n = 1  # Refractive index of the objective environment
+ns = 1  # Refractive index of the sample medium
 wavelength_em = 580e-9
 #pixelsize = 6.5/40*1e-6
 pixelsize = 6.5/60*1e-6
@@ -61,27 +61,27 @@ pixelsize = pixelsize/Scale
 
 alpha = 1.3
 beta = 0.7
-#噪声参数
+# Noise parameters
 a = 0.93
 b = 12
 photon1 = 60
 photon2 = 150
-RANG = 400   #  z方向取得  范围的一半   RANG/100 *  wavelength_em / (NA * NA)
+RANG = 400   # Half of the sampled z range: RANG/100 * wavelength_em / (NA * NA)
 edge=12*np.ceil((0.61*wavelength_em/NA)/pixelsize)
 edge = int(edge)
 
 params_PSF_em = {
-        'size': (255, 255, 1200),  # nx, ny, nz   奇数 最后裁剪出来的psf  对称
+        'size': (255, 255, 1200),  # nx, ny, nz; odd values keep the cropped PSF symmetric
         'NA': NA,
-        'lambda': wavelength_em,  # 发射波长
-        'ns': ns,  # 样品所处介质的折射率
-        'ni0': n, 'ni': n,  # 空气镜为1 油镜为1.5
-        'ng0': 1, 'ng': 1,  # 设计载玻片的折射率  实际载玻片的折射率
-        'tg0': 0e-6, 'tg': 0e-6,  # 设计载玻片的厚度  实际载玻片的厚度
-        'ti0': 0e-3,  # 工作距离   对于0.6na  40x 的物镜官网给的是 3.6--2.8mm
-        'resLateral': pixelsize,  # 横向采样 100 nm
-        'resAxial': wavelength_em / (NA * NA) / 100,  # 轴向采样 250 nm
-        'pZ': 0e-9,  # 轴向发射点距离盖玻片表面的距离  紧贴表面  设计  0-200nm
+        'lambda': wavelength_em,  # Emission wavelength
+        'ns': ns,  # Refractive index of the sample medium
+        'ni0': n, 'ni': n,  # 1 for an air objective and 1.5 for an oil objective
+        'ng0': 1, 'ng': 1,  # Design and actual refractive indices of the coverslip
+        'tg0': 0e-6, 'tg': 0e-6,  # Design and actual coverslip thicknesses
+        'ti0': 0e-3,  # Working distance; the specified range for a 40x/0.6 NA objective is 3.6--2.8 mm
+        'resLateral': pixelsize,  # Lateral sampling: 100 nm
+        'resAxial': wavelength_em / (NA * NA) / 100,  # Axial sampling: 250 nm
+        'pZ': 0e-9,  # Axial emitter distance from the coverslip surface; designed for 0--200 nm
     }
 
 
@@ -142,7 +142,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     print(edge)
-    #  2025-1124  使用修正的  PSF 模型
+    # 2025-11-24: use the corrected PSF model
     psf_conven = microsc_psf(params_PSF_em)
     mid_z = psf_conven.shape[2] // 2
 
@@ -151,7 +151,7 @@ def main():
 
     PSF_FFT_conven1 = []
     PSF_confocal_FFT_conven1 = []
-    for zi in range(mid_z - RANG, mid_z + RANG, 1):  # 记得修改  对应的数据集
+    for zi in range(mid_z - RANG, mid_z + RANG, 1):  # Update this for the corresponding dataset
         psf = Cutting_PSF(psf_conven[:, :, zi]).astype(np.float32, copy=False)
         # psf = psf_conven[:, :, zi].astype(np.float32, copy=False)
         #psf = torch.from_numpy(PSF_conven).float()
@@ -160,8 +160,8 @@ def main():
         else:
             scale = 1
         psf_confocal = psf * scale
-        # --- 关键修改：用 rfft2 生成半谱（最后一维变成 W//2+1）---
-        F_psf_bg1 = np.fft.rfft2(psf, s=(H, W))  # shape: (H, W//2+1)    # 专门针对“输入是实数”的情况，利用频谱的共轭对称性，只保留“非冗余的一半频谱”
+        # --- Key change: use rfft2 to generate a half-spectrum (last dimension becomes W//2+1) ---
+        F_psf_bg1 = np.fft.rfft2(psf, s=(H, W))  # shape: (H, W//2+1); retain only the nonredundant half-spectrum for real-valued input
         F_psf_confocal_bg1 = np.fft.rfft2(psf_confocal, s=(H, W))  # shape: (H, W//2+1)
 
         PSF_FFT_conven1.append(F_psf_bg1.astype(np.complex64, copy=False))
@@ -180,15 +180,15 @@ def main():
 
     model = sfhformer_haze().cuda()
     optimizer = torch.optim.Adam(model.parameters(),
-                                 lr=learning_rate,weight_decay=1e-5)  # 24年 optica  去掉 在损失函数中加入一个额外的项，所有权重的平方和与 weight_decay 的乘积
+                                 lr=learning_rate,weight_decay=1e-5)  # 2024 Optica: remove the extra loss term equal to weight_decay times the sum of squared weights
 
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, 4e-8)  # 24年
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, 4e-8)  # 2024
     criterion = nn.L1Loss()
     loss_history = []
 
-    min_valid_mse = 1    #  设置验证集的最小损失  值
+    min_valid_mse = 1    # Set the minimum validation loss
     start_ep = 0
-    # 从检查点  开始运行
+    # Resume from a checkpoint
     if os.path.isfile(os.path.join(path_model,"ep_120checkpoint.pth")):
         checkpoint = torch.load(os.path.join(path_model,"ep_120checkpoint.pth"), map_location='cpu')
         start_ep = checkpoint['epoch']
@@ -207,18 +207,18 @@ def main():
         ################### Train ###################
         model.train()
         train_l2_step = 0
-        LOSS_ALL=0   #  累加损失
+        LOSS_ALL=0   # Accumulated loss
         t1 = default_timer()
         for i, (noise_img, Ture_img) in enumerate(train_loader):
             # Break when reaching the batch_per_ep limit
             train_loss=0
             if i >= batch_per_ep:
                 break
-            # 将数据加载到 GPU（或 CPU）
+            # Load data onto the GPU (or CPU)
             noise_img = noise_img.to(device)
             Ture_img = Ture_img.to(device)
             #print(f"Batch {i}: lowimg dtype={lowimg.dtype}, highimg dtype={highimg.dtype}")
-            # 前向传播
+            # Forward pass
             output = model(noise_img)
             #print(output.dtype)
             train_loss += criterion(output,Ture_img)
@@ -227,7 +227,7 @@ def main():
                 output - Ture_img,
                 dim=(-2, -1),
             )
-            # 等价于原来对 real / imag stack 后再做 L1Loss
+            # Equivalent to stacking the real and imaginary parts before applying L1Loss
             fft_loss = 0.5 * (
                 fft_diff.real.abs().mean()
                 + fft_diff.imag.abs().mean()
@@ -237,20 +237,20 @@ def main():
             #print(train_loss.dtype)
             optimizer.zero_grad()
             train_loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1)  #  梯度裁剪  防止梯度爆炸
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1)  # Clip gradients to prevent exploding gradients
             optimizer.step()
             train_l2_step += 1
             LOSS_ALL +=train_loss.item()
-            # 打印当前 batch 的损失信息
-            if (i + 1) % 100 == 0:  # 每 10 个 batch 打印一次
+            # Print loss information for the current batch
+            if (i + 1) % 100 == 0:  # Print every 10 batches
                 print(f"Train_Batch {i + 1}/{batch_per_ep}, Loss_all:{train_loss.item():.6f}")
 
         avg_loss = LOSS_ALL / train_l2_step
-        loss_history.append(avg_loss)  # 记录每个 epoch 的平均损失
+        loss_history.append(avg_loss)  # Record the average loss for each epoch
 
         ################### valid ###################
-        # 记录每个 epoch 的训练时间
-        model.eval()  # 将模型设置为评估模式
+        # Record the training time for each epoch
+        model.eval()  # Set the model to evaluation mode
         valid_mse = 0
         valid_define_loss = 0
         xx_list = []
@@ -264,7 +264,7 @@ def main():
                 lowimg = lowimg.to(device)
                 highimg = highimg.to(device)
                 output = model(lowimg)
-                valid_mse += criterion(output, highimg).item()     #  验证的   损失函数  去掉  傅里叶变换部分
+                valid_mse += criterion(output, highimg).item()     # Validation loss without the Fourier-transform term
                 xx_list.append(lowimg.cpu().numpy())
                 yy_list.append(highimg.cpu().numpy())
                 im_list.append(output.cpu().numpy())
@@ -314,7 +314,7 @@ def main():
                 'torch_rand_state': torch.get_rng_state(),
                 }, os.path.join(path_model,  "ep_" + str(epochs) + "checkpoint.pth"))
     print("Training and Valid completed!")
-    writer.close()  # 将event log写完之后，记得close()
+    writer.close()  # Close the writer after flushing the event log
 
 if __name__ == '__main__':
     main()

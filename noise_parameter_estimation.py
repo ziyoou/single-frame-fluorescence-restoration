@@ -158,11 +158,11 @@ def estimate_bias_from_images(
     return bias_est
 
 # ============================================================
-# 2. patch 提取
+# 2. Patch extraction
 # ============================================================
 
 def extract_patches(img, patch_size=32, stride=16):
-    """从图像中滑动裁剪 patch。"""
+    """Extract sliding-window patches from an image."""
     h, w = img.shape
     return [
         img[y:y + patch_size, x:x + patch_size]
@@ -172,12 +172,12 @@ def extract_patches(img, patch_size=32, stride=16):
 
 
 # ============================================================
-# 3. 3x3 局部均值
+# 3. 3x3 local mean
 # ============================================================
 
 def local_mean_3x3(patch):
     """
-    不依赖 scipy 的 3x3 均值滤波。
+    Apply a 3x3 mean filter without relying on SciPy.
     """
 
     p = np.pad(patch, ((1, 1), (1, 1)), mode="reflect")
@@ -192,13 +192,13 @@ def local_mean_3x3(patch):
 
 
 # ============================================================
-# 4. patch 纹理强度
+# 4. Patch texture strength
 # ============================================================
 
 def gradient_energy(patch):
     """
-    用梯度能量衡量 patch 的纹理强度。
-    纹理越弱，值越小。
+    Measure patch texture strength using gradient energy.
+    Weaker textures produce smaller values.
     """
 
     gx = patch[:, 1:] - patch[:, :-1]
@@ -210,20 +210,20 @@ def gradient_energy(patch):
 
 
 # ============================================================
-# 5. patch 噪声方差估计
+# 5. Patch noise variance estimation
 # ============================================================
 
 def estimate_patch_noise_variance(patch):
     """
-    对一个弱纹理 patch 估计噪声方差。
+    Estimate the noise variance of a weak-texture patch.
 
-    用 3x3 局部均值去掉低频结构：
+    Remove low-frequency structure with a 3x3 local mean:
         residual = patch - local_mean_3x3(patch)
 
-    对白噪声 n，有：
+    For white noise n:
         Var(n - mean_3x3(n)) ≈ 8/9 Var(n)
 
-    所以用 8/9 做修正。
+    Therefore, apply an 8/9 correction.
     """
 
     mean_img = local_mean_3x3(patch)
@@ -237,7 +237,7 @@ def estimate_patch_noise_variance(patch):
 
 
 # ============================================================
-# 6. 选择弱纹理 patch
+# 6. Select weak-texture patches
 # ============================================================
 
 def collect_weak_texture_statistics(
@@ -250,16 +250,16 @@ def collect_weak_texture_statistics(
     weak_keep_ratio=0.25
 ):
     """
-    从单张噪声图中选择弱纹理 patch，并收集：
+    Select weak-texture patches from a single noisy image and collect:
         patch_mean
         patch_variance
 
-    注意：
-        这里在原始灰度单位下工作。
-        先做:
+    Note:
+        Calculations use the original grayscale units.
+        First compute:
             img = img_raw - bias
 
-    最后拟合:
+    Finally fit:
         variance_raw = alpha_raw * mean_raw + sigma_raw^2
     """
 
@@ -272,13 +272,13 @@ def collect_weak_texture_statistics(
             raw_patch = img_raw[y:y + patch_size, x:x + patch_size]
             patch = img[y:y + patch_size, x:x + patch_size]
 
-            # 负值比例
+            # Fraction of negative values
             neg_ratio = np.mean(patch < 0)
 
             if neg_ratio > NEG_RATIO_MAX:
                 continue
 
-            # 饱和比例，针对原始图像判断
+            # Saturation fraction measured on the raw image
             sat_ratio = np.mean(raw_patch >= max_gray)
 
             if sat_ratio > SAT_RATIO_MAX:
@@ -286,8 +286,8 @@ def collect_weak_texture_statistics(
 
             patch_mean = np.mean(patch)
 
-            # 均值太低的 patch 不参与 alpha 拟合，但背景可以帮助估计 sigma
-            # 这里先保留，后面拟合时再处理
+            # Exclude patches with very low means from alpha fitting, although
+            # background patches can help estimate sigma; retain them for now
             patch_var = estimate_patch_noise_variance(patch)
             texture = gradient_energy(patch)
 
@@ -307,7 +307,7 @@ def collect_weak_texture_statistics(
     vars_ = records[:, 1]
     textures = records[:, 2]
 
-    # 按亮度分 bin，每个 bin 内选择纹理最弱的一部分
+    # Bin by intensity and select the weakest-texture subset from each bin
     mean_min = np.percentile(means, 1)
     mean_max = np.percentile(means, 99)
 
@@ -344,16 +344,16 @@ def collect_weak_texture_statistics(
     return selected_means, selected_vars, records
 
 # ============================================================
-# 7. 鲁棒拟合 var = alpha * mean + sigma^2
+# 7. Robustly fit var = alpha * mean + sigma^2
 # ============================================================
 
 def fit_poisson_gaussian_ransac(means, variances):
     """
-    用 RANSAC 拟合：
+    Fit with RANSAC:
 
         variance = alpha * mean + sigma^2
 
-    返回:
+    Returns:
         alpha
         sigma
         sigma^2
@@ -363,7 +363,7 @@ def fit_poisson_gaussian_ransac(means, variances):
     x = means.astype(np.float64)
     y = variances.astype(np.float64)
 
-    # 只保留有限值
+    # Retain only finite values
     valid = np.isfinite(x) & np.isfinite(y) & (y > 0)
 
     x = x[valid]
@@ -375,7 +375,7 @@ def fit_poisson_gaussian_ransac(means, variances):
     best_inliers = None
     best_score = -1
 
-    # 用全局 MAD 估计大致残差尺度
+    # Estimate the approximate residual scale using the global MAD
     y_median = np.median(y)
     mad = np.median(np.abs(y - y_median)) + 1e-12
     threshold = INLIER_THRESHOLD_FACTOR * 1.4826 * mad
@@ -397,7 +397,7 @@ def fit_poisson_gaussian_ransac(means, variances):
         alpha = (y2[1] - y2[0]) / (x2[1] - x2[0])
         beta = y2[0] - alpha * x2[0]
 
-        # 只限制 alpha >= 0；允许 beta，也就是 sigma^2，为负数。
+        # Constrain only alpha >= 0; beta (sigma^2) may be negative.
         if alpha < 0:
             continue
 
@@ -412,12 +412,12 @@ def fit_poisson_gaussian_ransac(means, variances):
             best_inliers = inliers
 
     if best_inliers is None or np.sum(best_inliers) < 5:
-        # RANSAC 失败，退化为普通最小二乘
+        # Fall back to ordinary least squares if RANSAC fails
         A = np.stack([x, np.ones_like(x)], axis=1)
         alpha, beta = np.linalg.lstsq(A, y, rcond=None)[0]
         best_inliers = np.ones_like(x, dtype=bool)
     else:
-        # 用内点重新做最小二乘
+        # Refit by least squares using the inliers
         xi = x[best_inliers]
         yi = y[best_inliers]
 
@@ -433,7 +433,7 @@ def fit_poisson_gaussian_ransac(means, variances):
     return alpha, sigma, sigma2, best_inliers
 
 # ============================================================
-# 8. 主函数
+# 8. Main function
 # ============================================================
 
 def main():
@@ -441,7 +441,7 @@ def main():
 
     print(f"Found {len(image_paths)} images.")
 
-    # 自动或手动确定 bias
+    # Determine the bias automatically or manually
     # ========================================================
     if AUTO_BIAS:
         used_bias = estimate_bias_from_images(
@@ -473,7 +473,7 @@ def main():
         print("raw max:", float(np.max(img_raw)))
         print("raw mean:", float(np.mean(img_raw)))
         print("used bias:", float(used_bias))
-        print("negative ratio after bias:", float(np.mean((img_raw - used_bias) < 0)))   #  减去bias 后  有多少比例的像素变为负值
+        print("negative ratio after bias:", float(np.mean((img_raw - used_bias) < 0)))   # Fraction of pixels that become negative after subtracting the bias
 
         means, variances, _ = collect_weak_texture_statistics(
             img_raw,

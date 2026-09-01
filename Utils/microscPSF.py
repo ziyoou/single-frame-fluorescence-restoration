@@ -2,9 +2,9 @@
 
 import numpy as np
 from math import pi
-from scipy.special import j0, j1  # 0,1 阶 Bessel 函数
+from scipy.special import j0, j1  # Bessel functions of orders 0 and 1
 import matplotlib
-matplotlib.use('TkAgg')  # 或者 'Qt5Agg'
+matplotlib.use('TkAgg')  # Or 'Qt5Agg'
 from scipy.signal import convolve2d
 def microsc_psf(params):
     """
@@ -17,15 +17,15 @@ def microsc_psf(params):
     J. Opt. Soc. Am. A 34, 1029-1034 (2017).
     """
 
-    # ---- 复制参数并填默认值 ----
+    # ---- Copy parameters and fill in defaults ----
     p = dict(params)
     if 'size' not in p:
         raise ValueError("Please set params['size'] = (nx, ny, nz)")
     nx, ny, nz = p['size']
 
-    p.setdefault('numBasis', 200)       # Bessel 基函数个数
-    p.setdefault('numSamp', 2000)       # pupil 半径方向采样点数
-    p.setdefault('overSampling', 2)     # 径向过采样倍率
+    p.setdefault('numBasis', 200)       # Number of Bessel basis functions
+    p.setdefault('numSamp', 2000)       # Number of radial pupil samples
+    p.setdefault('overSampling', 2)     # Radial oversampling factor
 
     p.setdefault('NA', 1.4)
     p.setdefault('lambda', 610e-9)
@@ -45,18 +45,18 @@ def microsc_psf(params):
     p.setdefault('resAxial', 250e-9)    # axial sampling
     p.setdefault('pZ', 2000e-9)         # emitter depth in specimen
 
-    # ---- 像平面 & 轴向坐标 ----
+    # ---- Image-plane and axial coordinates ----
     x0 = (nx - 1) / 2.0
     y0 = (ny - 1) / 2.0
     xp, yp = x0, y0
 
     maxRadius = int(round(((nx - x0) ** 2 + (ny - y0) ** 2) ** 0.5)) + 1
-    R = np.arange(0, p['overSampling'] * maxRadius) / p['overSampling']  # 像素半径
-    r = R * p['resLateral']  # 物理半径 (m)
+    R = np.arange(0, p['overSampling'] * maxRadius) / p['overSampling']  # Radius in pixels
+    r = R * p['resLateral']  # Physical radius (m)
 
     Ti = p['ti0'] + p['resAxial'] * (np.arange(nz) - (nz - 1.0) / 2.0)
 
-    # ---- pupil 半径 ρ 采样 ----
+    # ---- Sample the pupil radius ρ ----
     a = 0.0
     b = min(
         1.0,
@@ -69,7 +69,7 @@ def microsc_psf(params):
     L = p['numSamp']
     Rho = np.linspace(a, b, L)[:, None]  # (L,1)
 
-    # ---- 1. 用 Bessel 系列逼近 exp(iW) ----
+    # ---- 1. Approximate exp(iW) with a Bessel series ----
     NN = p['numBasis']
     k0 = 2 * pi / p['lambda']
 
@@ -77,7 +77,7 @@ def microsc_psf(params):
     A2 = A ** 2
     Ab = A * b                    # A*b
 
-    # 缩放基频 an（Li & Blu 的经验做法）
+    # Scale the basis frequencies an using the Li and Blu heuristic
     k00 = 2 * pi / (545e-9)       # min wavelength
     factor1 = k0 / k00
     NA0 = 1.4                     # max NA
@@ -86,11 +86,11 @@ def microsc_psf(params):
     an = (3 * np.arange(1, NN + 1) - 2).astype(float)  # (NN,)
     an = an * factor1 * factor2
 
-    # 构造拟合矩阵 J (L×NN)
+    # Construct the fitting matrix J (L×NN)
     anRho = Rho @ an[None, :]     # (L,NN)
     J = j0(anRho)
 
-    # 解析核 Ele(r, an)
+    # Analytic kernel Ele(r, an)
     J0A = j0(Ab)                  # (Nr,)
     J1A = A * j1(Ab)              # (Nr,)
 
@@ -117,14 +117,14 @@ def microsc_psf(params):
     W = k0 * OPD
     Ffun = np.cos(W) + 1j * np.sin(W)      # = exp(iW)
 
-    # 求 Bessel 展开系数 Ci： J (L×NN) * Ci (NN×nz) ≈ Ffun (L×nz)
+    # Solve for Bessel expansion coefficients Ci: J (L×NN) * Ci (NN×nz) ≈ Ffun (L×nz)
     Ci, *_ = np.linalg.lstsq(J, Ffun, rcond=None)  # (NN,nz)
 
-    # ---- 2. 得到每个 z 的径向强度 PSF0(r,z) ----
+    # ---- 2. Obtain the radial intensity PSF0(r,z) for each z ----
     ciEle = Ele @ Ci               # (Nr,nz)
     PSF0 = np.abs(ciEle) ** 2      # (Nr,nz)
 
-    # ---- 3. 径向 → 笛卡尔网格插值 ----
+    # ---- 3. Interpolate from radial to Cartesian coordinates ----
     X, Y = np.meshgrid(np.arange(nx), np.arange(ny), indexing='xy')
     rPixel = np.sqrt((X - xp) ** 2 + (Y - yp) ** 2)
 
@@ -145,17 +145,17 @@ def microsc_psf(params):
         slice_ = h[index2] * disR + h[index1] * disR1
         PSF[:, :, zi] = slice_
 
-    # 归一化
+    # Normalize
     PSF /= PSF.max()
     return PSF
 
 def Cutting_PSF(psf_defocus):
-    ## 裁剪PSF
+    ## Crop the PSF
     center = np.array(psf_defocus.shape) // 2
-    # 提取中心行的强度值
+    # Extract intensity values from the center row
     center_row = psf_defocus[center[0], :]
 
-    # 提取中心行的右半部分强度值
+    # Extract intensity values from the right half of the center row
     right_half_row = center_row[center[1]:]
 
     max_value = np.max(right_half_row)
@@ -169,7 +169,7 @@ def Cutting_PSF(psf_defocus):
             threshold_index = i
             break
     else:
-        threshold_index = len(right_half_row) - 1  # 如果没有找到，设置为最后一个索引
+        threshold_index = len(right_half_row) - 1  # Use the last index if no threshold crossing is found
 
     cropped_psf = psf_defocus[center[0] - threshold_index + 1:center[0] + threshold_index,
                   center[1] - threshold_index + 1:center[1] + threshold_index]
@@ -178,21 +178,21 @@ def Cutting_PSF(psf_defocus):
 
 def PSF_confocal(params_PSF_exc,params_PSF_em,pinhole_AU):
     PSF_exc = microsc_psf(params_PSF_exc)
-    airy_diameter = 1.22 * params_PSF_em['lambda'] / params_PSF_em['NA']    # [m] 探测面上的1 AU直径
+    airy_diameter = 1.22 * params_PSF_em['lambda'] / params_PSF_em['NA']    # [m] Diameter of 1 AU at the detector plane
     pinhole_radius = (pinhole_AU * airy_diameter)/2
     radius_samples = max(1, int(np.ceil(pinhole_radius / params_PSF_em['resLateral'])))
 
     R = radius_samples
     size = 2 * R + 1
     y, x = np.ogrid[-R:R + 1, -R:R + 1]
-    mask = x ** 2 + y ** 2 <= R ** 2  # 圆形区域
+    mask = x ** 2 + y ** 2 <= R ** 2  # Circular region
     kernel = np.zeros((size, size), dtype=float)
     kernel[mask] = 1.0
 
 
     PSF_em = microsc_psf(params_PSF_em)
     PSF_em_eff = np.empty_like(PSF_em)
-    for zi in range(PSF_em.shape[2]):  # 记得修改  对应的数据集
+    for zi in range(PSF_em.shape[2]):  # Update this for the corresponding dataset
         #PSF_em_eff[:, :, zi] = np.convolve(PSF_em[:, :, zi], kernel, mode='same')
         PSF_em_eff[:, :, zi] = convolve2d(PSF_em[:, :, zi],kernel,mode='same',boundary='fill')
         #xy_slice = Cutting_PSF(xy_slice)

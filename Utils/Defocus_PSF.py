@@ -1,35 +1,36 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import j1  # 第一类一阶 Bessel 函数
+from scipy.special import j1  # First-order Bessel function of the first kind
 import matplotlib
-matplotlib.use('TkAgg')  # 或者 'Qt5Agg'
+matplotlib.use('TkAgg')  # Or 'Qt5Agg'
 
 
-#  离焦PSF 的函数
+# Defocused PSF function
 def defocused_psf(NA, wavelength0, n, pixel_size, z):
     """
-    用角谱法计算介质折射率 n 下, 离焦距离 z (µm) 处的 PSF
+    Calculate the PSF at defocus distance z (µm) in a medium with refractive
+    index n using the angular spectrum method.
 
-    参数
+    Parameters
     ----
-    NA          : 数值孔径 (已包含 n)
-    wavelength0 : 真空波长 (µm)
-    n           : 环境折射率
-    size        : 计算网格大小 (像素数, size x size)
-    pixel_size  : 像素大小 (µm)
-    z           : 离焦距离 (µm)
+    NA          : Numerical aperture (including n)
+    wavelength0 : Vacuum wavelength (µm)
+    n           : Refractive index of the medium
+    size        : Computational grid size in pixels (size x size)
+    pixel_size  : Pixel size (µm)
+    z           : Defocus distance (µm)
 
-    返回
+    Returns
     ----
-    psf         : 归一化 PSF (二维 numpy 数组)
+    psf         : Normalized PSF (2D NumPy array)
     """
 
-    # 有效波长 & 波矢
+    # Effective wavelength and wave vector
     wavelength_eff = wavelength0 / n
     k = 2 * np.pi / wavelength_eff  # [rad/µm]
 
     size = 256
-    # 空间频率坐标（相机平面）
+    # Spatial-frequency coordinates in the camera plane
     fx = np.fft.fftfreq(size, d=pixel_size)  # [µm^-1]
     fy = np.fft.fftfreq(size, d=pixel_size)
     # print(fx[:10])
@@ -39,20 +40,20 @@ def defocused_psf(NA, wavelength0, n, pixel_size, z):
     # print(FX[2,0]-FX[2,1])
     # print("************************")
 
-    # pupil 半径 (cutoff freq)
+    # Pupil radius (cutoff frequency)
     f_cutoff = NA / wavelength0   # [1/µm]
     pupil = (FX**2 + FY**2 <= f_cutoff**2).astype(float)
 
-    # 传播算子 H(u,v;z)
-    # 注意空间频率要转换为传播方向分量
+    # Propagation operator H(u,v;z)
+    # Convert spatial frequencies to propagation-direction components
     fx_phys = FX * 2 * np.pi
     fy_phys = FY * 2 * np.pi
     inside = k**2 - (fx_phys**2 + fy_phys**2)
-    inside[inside <= 0] = 0  # 过滤倏逝波
+    inside[inside <= 0] = 0  # Filter evanescent waves
     W = np.sqrt(inside)
     H = np.exp(1j * W * z)
 
-    # 离焦 pupil → 逆 FFT → 场分布
+    # Defocused pupil → inverse FFT → field distribution
     pupil_prop = pupil * H
     field = np.fft.ifft2(np.fft.ifftshift(pupil_prop))
     psf = np.abs(field)**2
@@ -60,12 +61,12 @@ def defocused_psf(NA, wavelength0, n, pixel_size, z):
     psf_defocus = np.fft.fftshift(psf)
 
 
-    ## 裁剪PSF
+    ## Crop the PSF
     center = np.array(psf_defocus.shape) // 2
-    # 提取中心行的强度值
+    # Extract intensity values from the center row
     center_row = psf_defocus[center[0], :]
 
-    # 提取中心行的右半部分强度值
+    # Extract intensity values from the right half of the center row
     right_half_row = center_row[center[1]:]
 
     max_value = np.max(right_half_row)
@@ -79,7 +80,7 @@ def defocused_psf(NA, wavelength0, n, pixel_size, z):
             threshold_index = i
             break
     else:
-        threshold_index = len(right_half_row) - 1  # 如果没有找到，设置为最后一个索引
+        threshold_index = len(right_half_row) - 1  # Use the last index if no threshold crossing is found
 
     cropped_psf = psf_defocus[center[0] - threshold_index + 1:center[0] + threshold_index,
                   center[1] - threshold_index + 1:center[1] + threshold_index]
@@ -90,7 +91,7 @@ def defocused_psf(NA, wavelength0, n, pixel_size, z):
 
 """
 NA = 0.6
-n = 1   # 物镜的环境折射率
+n = 1   # Refractive index of the objective environment
 Scale = 1
 wavelength = 580e-9
 pixelsize = 6.5/40*1e-6
@@ -99,7 +100,7 @@ pixelsize = pixelsize/Scale
 
 z = 0.8 *wavelength/(NA*NA)
 #z = 0
-#示例：水中的 PSF (n=1.33)
+# Example: PSF in water (n=1.33)
 cropped_psf = defocused_psf(NA, wavelength, n, pixelsize, z)
 
 print(cropped_psf.shape)

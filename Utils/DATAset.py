@@ -81,7 +81,7 @@ class CustomDataset_denoise_new(Dataset):   #  [N C  H   W]   C  the channels
         lr_img = lr_img[self.edge:self.S + self.edge, self.edge:self.S + self.edge]
         lr_img = normalize_minmax_numpy(lr_img)
 
-        # RAND 表示最大期望光子数
+        # RAND is the maximum expected photon count
         PHOTON = lr_img * float(random.randint(int(self.photon1), int(self.photon2)))
         clean_img = self.a * PHOTON
         noise_var = self.a * clean_img + self.b
@@ -90,14 +90,14 @@ class CustomDataset_denoise_new(Dataset):   #  [N C  H   W]   C  the channels
             scale=np.sqrt(np.maximum(noise_var, 0.0)),
         ).astype('float32')
 
-        # Poisson + Gaussian 噪声合成
+        # Synthesize Poisson-Gaussian noise
         noise_lr_img = clean_img + gaussian_noise
         scale = float(np.max(noise_lr_img))
 
         clean_img = clean_img / scale
         noise_lr_img = noise_lr_img / scale
 
-        # [1, H, W] 单通道输出
+        # Single-channel output with shape [1, H, W]
         Noise_lr_Img = noise_lr_img[np.newaxis, ...].astype(np.float32)
         Denoise_lr_Img = clean_img[np.newaxis, ...].astype(np.float32)
         return torch.from_numpy(Noise_lr_Img), torch.from_numpy(Denoise_lr_Img)
@@ -131,7 +131,7 @@ class CustomDataset_remove_Bg(Dataset):
         self.photon2 = photon2
         self.trans = trans
 
-        # 预先读取每个文件夹中的 png 路径
+        # Preload PNG paths from each folder
         self.files = []
         for d in self.hr_dir:
             fs = sorted(glob.glob(os.path.join(d, "*.png")))
@@ -141,7 +141,7 @@ class CustomDataset_remove_Bg(Dataset):
 
             self.files.append(fs)
 
-        # 防止不同文件夹图片数不一致
+        # Handle different image counts across folders
         self.length = min(len(fs) for fs in self.files)
 
         # PSF FFT shape: [H, W//2+1, Z]
@@ -165,11 +165,11 @@ class CustomDataset_remove_Bg(Dataset):
         return self.length
 
     def _read_one(self, path):
-        # 读取单通道灰度图
+        # Load a single-channel grayscale image
         img = Image.open(path).convert("L")
         arr = np.asarray(img, dtype=np.float32) / 255.0
 
-        # 保持你原来的 transform 调用方式
+        # Preserve the original transform call
         if self.trans is not None:
             out = self.trans(arr)
 
@@ -184,7 +184,7 @@ class CustomDataset_remove_Bg(Dataset):
         N = len(self.hr_dir)
 
         # -------------------------------------------------
-        # 1. 读取 N 张图像，shape: [N, H, W]
+        # 1. Load N images with shape [N, H, W]
         # -------------------------------------------------
         imgs = [
             self._read_one(self.files[i][index])
@@ -193,8 +193,8 @@ class CustomDataset_remove_Bg(Dataset):
 
         imgs = np.stack(imgs, axis=0)
 
-        # 某些 np_transforms 会输出 [H, W, 1]
-        # 堆叠后变成 [N, H, W, 1]，这里恢复为 [N, H, W]
+        # Some np_transforms return [H, W, 1]
+        # Stacking produces [N, H, W, 1]; restore it to [N, H, W]
         if imgs.ndim == 4 and imgs.shape[-1] == 1:
             imgs = imgs[..., 0]
 
@@ -209,7 +209,7 @@ class CustomDataset_remove_Bg(Dataset):
         ).astype(np.complex64, copy=False)
 
         # -------------------------------------------------
-        # 3. 每张图选择一个对应 z 的 PSF
+        # 3. Select a PSF at the corresponding z position for each image
         # -------------------------------------------------
         lows = (
             np.arange(N) * (2 * self.RANG) / N
@@ -239,9 +239,9 @@ class CustomDataset_remove_Bg(Dataset):
         psf_design = np.moveaxis(psf_design, 2, 0)
 
         # -------------------------------------------------
-        # 4. 核心加速：
-        # 原来是 N 次 conventional irfft2 + N 次 confocal irfft2。
-        # 现在先在频域求和，各只做 1 次 irfft2。
+        # 4. Core optimization:
+        # Previously, conventional and confocal irfft2 were each run N times.
+        # Now, sum in the frequency domain and run each irfft2 only once.
         # -------------------------------------------------
         sum_fft_conven = np.sum(
             F_imgs * psf_conv,
@@ -264,7 +264,7 @@ class CustomDataset_remove_Bg(Dataset):
         ).astype(np.float32)
 
         # -------------------------------------------------
-        # 5. 裁剪边缘
+        # 5. Crop the borders
         # -------------------------------------------------
         e = self.edge
         S = self.S
@@ -279,12 +279,12 @@ class CustomDataset_remove_Bg(Dataset):
             e:e + S,
         ]
 
-        # 防止少量 FFT 数值误差产生负数，导致 Poisson 报错
+        # Prevent small negative FFT roundoff errors from breaking Poisson sampling
         sum_img_conven = np.maximum(sum_img_conven, 0.0)
         sum_img_design = np.maximum(sum_img_design, 0.0)
 
         # -------------------------------------------------
-        # 6. 原有归一化与噪声模型，保持不变
+        # 6. Preserve the original normalization and noise model
         # -------------------------------------------------
         sum_img_design = sum_img_design / (
             sum_img_design.max() + 1e-8
@@ -326,7 +326,7 @@ class CustomDataset_remove_Bg(Dataset):
         )
 
         # -------------------------------------------------
-        # 7. 输出 Tensor，shape: [1, S, S]
+        # 7. Return a tensor with shape [1, S, S]
         # -------------------------------------------------
         Conven_Img = np.ascontiguousarray(
             sum_img_conven[None, ...],

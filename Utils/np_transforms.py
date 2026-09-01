@@ -1,7 +1,7 @@
 
 import math
 import matplotlib
-matplotlib.use('TkAgg')  # 或者 'Qt5Agg'
+matplotlib.use('TkAgg')  # Or 'Qt5Agg'
 
 import random
 import scipy
@@ -19,7 +19,7 @@ import collections
 from torchvision import transforms
 
 
-def prctile_norm(x, min_prc=0, max_prc=100):       #  百分位数 归一化
+def prctile_norm(x, min_prc=0, max_prc=100):       # Percentile normalization
     y = (x-np.percentile(x, min_prc))/(np.percentile(x, max_prc)-np.percentile(x, min_prc)+1e-7)
     # print(np.percentile(x, max_prc))
     y[y > 1] = 1
@@ -159,7 +159,7 @@ class Compose(transforms.Compose):
 
 def fft_l1_loss(x, y, criterion):
     """
-    计算两个图像的傅里叶域 L1 损失。
+    Calculate the Fourier-domain L1 loss between two images.
     x, y: [B, C, H, W]
     """
 

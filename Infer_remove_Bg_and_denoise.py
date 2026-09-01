@@ -8,17 +8,17 @@ import tifffile
 from Utils.sfhformer_haze import sfhformer_haze
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
-# 输入：平场校正后的三维 TIFF stack
+# Input: flat-field-corrected 3D TIFF stack
 input_stack_path = r".\demo_data\remove_background\raw_noise_stack.npy"
 
-# 输出：网络推理后的三维 TIFF stack
+# Output: network-inferred 3D TIFF stack
 out_stack_path = r".\demo_data\remove_background\infer_denoise_stack.tif"
 compare_folder = r".\demo_data\remove_background\Result_color"
 os.makedirs(compare_folder, exist_ok=True)
 # ===================== Parameters =====================
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = sfhformer_haze()  # 参数必须与训练时一致
+model = sfhformer_haze()  # Parameters must match those used during training
 
 state_dict = torch.load(
     r"path_models\remove_background\ep_135_Only_noisy_img_state_dict.pth",
@@ -30,15 +30,15 @@ model.load_state_dict(state_dict)
 model = model.cuda()
 model.eval()
 
-# 保持你原来的裁剪逻辑。
-# 若不希望裁剪，改为 None。
+# Preserve the original cropping logic.
+# Set to None to disable cropping.
 
-# "per_slice"：与原先逐张 .npy 推理时的归一化方式一致
-# "global"：所有 Z 层使用同一个最大值，更严格保留层间相对亮度
+# "per_slice": use the same normalization as the original per-image .npy inference
+# "global": use one maximum for all Z slices to better preserve relative intensity across slices
 normalization_mode = "per_slice"
 
 def pad_to_multiple(x, multiple=8):
-    """将 H、W 补齐到 multiple 的整数倍，避免网络尺寸不匹配。"""
+    """Pad H and W to multiples of ``multiple`` to satisfy the network size requirement."""
     _, _, h, w = x.shape
 
     pad_h = (multiple - h % multiple) % multiple
@@ -52,12 +52,11 @@ def pad_to_multiple(x, multiple=8):
 
 def load_tiff_stack(path):
     """
-    读取 TIFF stack。
-    输出 shape 统一为 (Z, Y, X)。
+    Load a TIFF stack and return it with shape (Z, Y, X).
     """
     stack = tifffile.imread(path)
 
-    # 单张二维图也允许输入，自动视为 Z=1
+    # Accept a single 2D image by treating it as Z=1
     if stack.ndim == 2:
         stack = stack[np.newaxis, :, :]
 
@@ -79,14 +78,14 @@ def main():
 
     os.makedirs(os.path.dirname(os.path.abspath(out_stack_path)), exist_ok=True)
 
-    # ---------- 读取三维输入 ----------
+    # ---------- Load the 3D input ----------
     stack = np.load(input_stack_path)
     print(f"Input stack shape (Z, Y, X): {stack.shape}")
     print(f"Input dtype: {stack.dtype}")
 
     nz, height, width = stack.shape
 
-    # 仅在 global 模式下计算一次全 stack 最大值
+    # Compute the maximum over the full stack once in global mode
     if normalization_mode == "global":
         global_max_gray = max(float(np.max(stack)), 1e-6)
     elif normalization_mode != "per_slice":
@@ -94,7 +93,7 @@ def main():
             "normalization_mode 只能是 'per_slice' 或 'global'。"
         )
 
-    # 推理输出为 uint16，因此估计是否需要 BigTIFF
+    # Estimate whether BigTIFF is required for the uint16 inference output
     estimated_output_bytes = nz * height * width * np.dtype(np.uint16).itemsize
     use_bigtiff = estimated_output_bytes > 3.8 * 1024**3
 
@@ -103,14 +102,14 @@ def main():
 
     start_time = time.perf_counter()
 
-    # 逐层写出，避免把整个预测结果全部堆在内存中
+    # Write one slice at a time to avoid holding the full prediction in memory
     with tifffile.TiffWriter(out_stack_path, bigtiff=use_bigtiff) as tif:
         with torch.inference_mode():
             for z in range(nz):
-                # 当前 Z 层，转 float32
+                # Convert the current Z slice to float32
                 arr = stack[z].astype(np.float32)
 
-                # 归一化方式
+                # Select the normalization method
                 if normalization_mode == "per_slice":
                     max_gray = max(float(arr.max()), 1e-6)
                 else:
@@ -119,23 +118,23 @@ def main():
                 x_np = np.ascontiguousarray(arr / max_gray, dtype=np.float32)
                 x = torch.from_numpy(x_np)[None, None, :, :].to(device)
 
-                # 补齐到网络要求的尺寸
+                # Pad to the size required by the network
                 x_pad, original_h, original_w = pad_to_multiple(x, multiple=8)
 
-                # 网络推理
+                # Run network inference
                 pred = model(x_pad)
 
-                # 某些模型可能返回 tuple/list
+                # Some models may return a tuple or list
                 if isinstance(pred, (tuple, list)):
                     pred = pred[0]
 
-                # 裁掉 padding，恢复到原尺寸
+                # Remove padding and restore the original size
                 pred = pred[:, :, :original_h, :original_w]
 
-                # 恢复到原始强度尺度
+                # Restore the original intensity scale
                 pred_raw = pred[0, 0].float().cpu().numpy() * max_gray
 
-                # # 防止 NaN/Inf，并写为 16-bit
+                # Guard against NaN/Inf and write as 16-bit
                 pred_raw = np.nan_to_num(
                     pred_raw,
                     nan=0.0,
@@ -148,7 +147,7 @@ def main():
                     0,
                     65535
                 ).astype(np.uint16)
-                # 每一页对应一个 Z 层
+                # Each page corresponds to one Z slice
                 tif.write(
                     pred_u16,
                     photometric="minisblack",
