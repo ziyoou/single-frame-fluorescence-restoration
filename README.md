@@ -12,7 +12,8 @@ To install the dependencies, run: pip install -r requirements.txt
 single-frame-fluorescencerestoration/
 ├── dataset/                         # Simulated datasets
 ├── demo_data/                       # Example fluorescence images for demonstration
-├── path_models/                     # Pretrained model checkpoints
+├── Trained_model/                   # Author-provided pretrained model weights
+├── path_models/                     # Directory for saving model checkpoints
 ├── Utils/                           # Utility functions and network-related modules
 │
 ├── generate_randimage.py            # Generate artificial random images
@@ -48,7 +49,7 @@ Before initiating model training, specify the key imaging and noise parameters, 
 
 ## Inference
 
-To evaluate the pretrained models, use the example images in `demo_data/` and the model checkpoints in `path_models/`. After specifying the input, model-checkpoint, and output paths, run one of the following scripts:
+To evaluate the pretrained models, use the example images in `demo_data/` and the model checkpoints in `path_models/` 或者使用已经训练好的模型参数进行验证. After specifying the input, model-checkpoint, and output paths, run one of the following scripts:
 
 - `Infer_denoise_wide_field.py`: wide-field fluorescence denoising. The inference results are saved in `demo_data\denoise\experimental_wide_field_img`. Representative restored images are shown below:
 
