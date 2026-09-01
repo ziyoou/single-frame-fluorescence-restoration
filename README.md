@@ -12,7 +12,7 @@ To install the dependencies, run: pip install -r requirements.txt
 single-frame-fluorescencerestoration/
 ├── dataset/                         # Simulated datasets
 ├── demo_data/                       # Example fluorescence images for demonstration
-├── path_models/                   # Directory for model checkpoints, including pretrained model weights provided by the authors
+├── path_models/                     # Directory for model checkpoints, including pretrained model weights provided by the authors
 ├── Utils/                           # Utility functions and network-related modules
 │
 ├── generate_randimage.py            # Generate artificial random images
