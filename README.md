@@ -49,7 +49,7 @@ Before initiating model training, specify the key imaging and noise parameters, 
 
 ## Inference
 
-To evaluate the models, use the example images in demo_data/ together with the model checkpoints generated during training and saved in path_models/. After specifying the paths to the input images, model checkpoint, and output directory, run one of the following scripts:
+To evaluate the models, use the example images in `demo_data/` together with the model checkpoints generated during training and saved in `path_models/`. After specifying the paths to the input images, model checkpoint, and output directory, run one of the following scripts:
 
 - `Infer_denoise_wide_field.py`: wide-field fluorescence denoising. The inference results are saved in `demo_data\denoise\experimental_wide_field_img`. Representative restored images are shown below:
 
