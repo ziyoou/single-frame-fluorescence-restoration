@@ -31,12 +31,13 @@ single-frame-fluorescencerestoration/
 ├── LICENSE                          # Software license
 └── .gitignore                       # Files and directories excluded from Git
 
-
-
 ```
 
+The provided training and inference scripts use the parameter configurations adopted in this study. The default settings are provided only as examples and may not be directly applicable to arbitrary fluorescence datasets. Several pretrained model weights and representative inference results are also included for demonstration and evaluation.
+
 ## Train
-Before initiating model training, specify the key imaging and noise parameters, including the numerical aperture (NA), emission wavelength, pixel size, noise parameters, and peak photon count. Once these parameters have been determined, follow the steps below to train the models from scratch:
+
+Before initiating model training, specify the key imaging and noise parameters, including the numerical aperture (NA), emission wavelength, pixel size, noise parameters,  peak photon count and other task-specific parameters. Once these parameters have been determined, follow the steps below to train the models from scratch:
 
 - Run `generate_randimage.py` to generate 10,000 random images (512 × 512 pixels) in each subfolder of `dataset/`. The validation set contains one tenth as many images as the training set.
 - Change the relative dataset and model-saving paths in the corresponding training scripts.
