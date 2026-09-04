@@ -1,0 +1,66 @@
+{
+  "training": {
+    "batch_per_epoch": 600,
+    "learning_rate": 0.0002,
+    "epochs": 350,
+    "gradient_clip_norm": 1.0
+  },
+  "image": {
+    "size": 256,
+    "scale": 1
+  },
+  "optics": {
+    "NA": 0.6,
+    "wavelength": 5.8e-7,
+    "camera_pixel_size_um": 6.5,
+    "magnification": 40,
+    "pixel_size": 1.625e-7,
+    "edge_formula": "ceil((0.61 * wavelength / NA) / pixel_size)",
+    "edge": 4,
+    "objective_refractive_index": 1.0,
+    "sample_refractive_index": 1.0
+  },
+  "noise": {
+    "a": 0.93,
+    "b1": 8,
+    "b2": 14,
+    "photon1": 20,
+    "photon2": 100
+  },
+  "psf_low": {
+    "size": [
+      255,
+      255,
+      500
+    ],
+    "NA": 0.6,
+    "wavelength": 5.8e-7,
+    "sample_refractive_index": 1.0,
+    "design_immersion_refractive_index": 1.0,
+    "actual_immersion_refractive_index": 1.0,
+    "design_coverslip_refractive_index": 1.5,
+    "actual_coverslip_refractive_index": 1.5,
+    "design_coverslip_thickness": 0.00017,
+    "actual_coverslip_thickness": 0.00017,
+    "working_distance": 0.0028,
+    "lateral_resolution": 1.625e-7,
+    "axial_resolution": 1.6111111111111112e-8,
+    "emitter_axial_position": 1e-7,
+    "z_slice_start_offset": -100,
+    "z_slice_stop_offset": 100,
+    "z_slice_step": 1
+  },
+  "model": {
+    "name": "SFHformer_m"
+  },
+  "optimizer": {
+    "name": "Adam",
+    "learning_rate": 0.0002,
+    "weight_decay": 1e-5
+  },
+  "scheduler": {
+    "name": "CosineAnnealingLR",
+    "T_max": 350,
+    "eta_min": 4e-8
+  }
+}
