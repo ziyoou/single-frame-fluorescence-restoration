@@ -1,8 +1,12 @@
 {
+  "experiment": {
+    "source_name": "Epochs=400model=SFHformer_m_learning_rate=0.0002_NA=0.6_lambda=5.8e-07_a=0.93_b1=8_b2=14_photon1=20_photon2=100_Date=2025-11-25",
+    "date": "2025-11-25"
+  },
   "training": {
     "batch_per_epoch": 600,
     "learning_rate": 0.0002,
-    "epochs": 350,
+    "epochs": 400,
     "gradient_clip_norm": 1.0
   },
   "image": {
@@ -60,7 +64,7 @@
   },
   "scheduler": {
     "name": "CosineAnnealingLR",
-    "T_max": 350,
+    "T_max": 400,
     "eta_min": 4e-8
   }
 }
